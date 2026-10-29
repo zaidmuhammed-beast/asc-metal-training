@@ -1,0 +1,24 @@
+{
+  "name": "asc-metals-candidate-portal",
+  "version": "1.0.0",
+  "description": "Candidate screening portal: resume auto-scoring, video assessments with in-video checkpoint questions, and automatic shortlisting for final interview.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zaidmuhammed-beast/asc-metal-training.git"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.22.3",
+    "mammoth": "^1.13.0",
+    "multer": "^2.5.0",
+    "pdf-parse": "^2.4.5"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "_note": "Sample assessment content. Replace videoUrl with your hosted MP4 (or leave empty to use the built-in slide player) and set durationSec to the real video length. answerIndex is 0-based and is never sent to the browser.",
+  "modules": [
+    {
+      "id": "al",
+      "title": "Aluminium",
+      "tags": ["Sheet", "Bar", "Tube", "Treadplate"],
+      "videoUrl": "",
+      "durationSec": 120,
+      "chapters": [
+        { "at": 0, "title": "What is aluminium?", "text": "A lightweight, non-magnetic metal — roughly a third of the weight of steel. A natural oxide layer gives it good corrosion resistance." },
+        { "at": 40, "title": "Forms we stock", "text": "Sheet, round bar, square bar, flat bar, tube, angle and treadplate. Bar is sold by weight per metre." },
+        { "at": 80, "title": "Reading the weight chart", "text": "1\" round bar weighs 1.414 kg/m. A 3mm sheet at 2m × 1m weighs about 16.3 kg." }
+      ],
+      "checkpoints": [
+        { "id": "al-1", "at": 35, "question": "Compared with steel, aluminium is roughly…", "options": ["The same weight", "One third of the weight", "Twice the weight", "Ten times lighter"], "answerIndex": 1, "explanation": "Aluminium is roughly a third of the weight of steel." },
+        { "id": "al-2", "at": 75, "question": "How is aluminium bar normally priced and measured?", "options": ["By the sheet", "By weight per metre", "By the piece only", "By volume in litres"], "answerIndex": 1, "explanation": "Bar is sold by weight per metre (kg/m)." },
+        { "id": "al-3", "at": 112, "question": "What is the weight of a 1\" diameter aluminium round bar?", "options": ["0.796 kg/m", "1.414 kg/m", "2.202 kg/m", "1.083 kg/m"], "answerIndex": 1, "explanation": "1\" aluminium round bar = 1.414 kg/m." }
+      ]
+    },
+    {
+      "id": "ss",
+      "title": "Stainless Steel",
+      "tags": ["Sheet", "Round bar", "Pipe", "Angle"],
+      "videoUrl": "",
+      "durationSec": 120,
+      "chapters": [
+        { "at": 0, "title": "What makes it stainless?", "text": "Stainless steel contains at least about 10.5% chromium, which forms a protective layer that resists rust." },
+        { "at": 40, "title": "304 vs 316", "text": "Grade 316 adds molybdenum for better resistance in marine and chemical environments. 304 is the general-purpose grade." },
+        { "at": 80, "title": "Reading the weight chart", "text": "Stainless is much denser than aluminium — a 25mm round bar weighs about 3.85 kg/m." }
+      ],
+      "checkpoints": [
+        { "id": "ss-1", "at": 35, "question": "Which element gives stainless steel its corrosion resistance?", "options": ["Carbon", "Zinc", "Chromium", "Lead"], "answerIndex": 2, "explanation": "Chromium (min. ~10.5%) forms the passive protective layer." },
+        { "id": "ss-2", "at": 75, "question": "A customer needs stainless for a boat fitting near sea water. Which grade suits best?", "options": ["304", "316", "430", "Mild steel"], "answerIndex": 1, "explanation": "316 contains molybdenum, improving resistance to chlorides." },
+        { "id": "ss-3", "at": 112, "question": "Approximately how much does a 25mm stainless round bar weigh?", "options": ["0.62 kg/m", "1.39 kg/m", "3.85 kg/m", "9.86 kg/m"], "answerIndex": 2, "explanation": "25mm stainless round bar ≈ 3.85 kg/m." }
+      ]
+    },
+    {
+      "id": "cu",
+      "title": "Copper",
+      "tags": ["Sheet", "Round bar", "Flat bar"],
+      "videoUrl": "",
+      "durationSec": 120,
+      "chapters": [
+        { "at": 0, "title": "What is copper?", "text": "A heavy, highly conductive metal — second only to silver for electrical conductivity." },
+        { "at": 40, "title": "Common applications", "text": "Electrical busbars, earthing, heat exchangers and decorative work. Over time it develops a green patina." },
+        { "at": 80, "title": "Reading the weight chart", "text": "A 1\" copper round bar weighs about 4.54 kg/m — over three times the aluminium equivalent." }
+      ],
+      "checkpoints": [
+        { "id": "cu-1", "at": 35, "question": "Copper is best known for which property?", "options": ["Magnetism", "Electrical conductivity", "Being the lightest metal", "Not conducting heat"], "answerIndex": 1, "explanation": "Copper is an excellent electrical (and thermal) conductor." },
+        { "id": "cu-2", "at": 75, "question": "A customer asks for flat bar to make an electrical busbar. Which metal do you suggest first?", "options": ["Copper", "Phosphor bronze", "Stainless steel", "Lead"], "answerIndex": 0, "explanation": "Copper flat bar is the standard busbar material." },
+        { "id": "cu-3", "at": 112, "question": "Approximately how much does a 1\" copper round bar weigh?", "options": ["1.41 kg/m", "2.55 kg/m", "4.54 kg/m", "18.0 kg/m"], "answerIndex": 2, "explanation": "1\" copper round bar ≈ 4.54 kg/m." }
+      ]
+    },
+    {
+      "id": "br",
+      "title": "Brass",
+      "tags": ["Sheet", "Round bar", "Hexagon", "Tube"],
+      "videoUrl": "",
+      "durationSec": 120,
+      "chapters": [
+        { "at": 0, "title": "What is brass?", "text": "Brass is an alloy of copper and zinc. It machines easily and has an attractive gold colour." },
+        { "at": 40, "title": "Free-machining brass", "text": "Free-machining grades (e.g. CZ121) contain a small amount of lead so chips break cleanly on the lathe." },
+        { "at": 80, "title": "Reading the weight chart", "text": "A 1\" brass round bar weighs about 4.30 kg/m." }
+      ],
+      "checkpoints": [
+        { "id": "br-1", "at": 35, "question": "Brass is an alloy of copper and…", "options": ["Tin", "Zinc", "Nickel", "Aluminium"], "answerIndex": 1, "explanation": "Brass = copper + zinc. (Bronze is copper + tin.)" },
+        { "id": "br-2", "at": 75, "question": "Why do free-machining brass grades contain a little lead?", "options": ["To make it magnetic", "To change the colour", "So chips break cleanly when machining", "To make it lighter"], "answerIndex": 2, "explanation": "Lead acts as a chip breaker and improves machinability." },
+        { "id": "br-3", "at": 112, "question": "Approximately how much does a 1\" brass round bar weigh?", "options": ["4.30 kg/m", "1.07 kg/m", "17.17 kg/m", "0.67 kg/m"], "answerIndex": 0, "explanation": "1\" brass round bar ≈ 4.30 kg/m." }
+      ]
+    },
+    {
+      "id": "pb",
+      "title": "Phosphor Bronze",
+      "tags": ["Round bar", "Hollow bar"],
+      "videoUrl": "",
+      "durationSec": 120,
+      "chapters": [
+        { "at": 0, "title": "What is phosphor bronze?", "text": "A copper–tin alloy with a small addition of phosphorus, giving strength and excellent wear resistance." },
+        { "at": 40, "title": "Where it's used", "text": "Bearings, bushes, gears and springs. Hollow bar lets customers machine bushes with less waste." },
+        { "at": 80, "title": "Reading the weight chart", "text": "A 1\" phosphor bronze round bar weighs about 4.92 kg/m." }
+      ],
+      "checkpoints": [
+        { "id": "pb-1", "at": 35, "question": "Phosphor bronze is mainly copper alloyed with…", "options": ["Zinc", "Tin (plus a little phosphorus)", "Chromium", "Iron"], "answerIndex": 1, "explanation": "Phosphor bronze = copper + tin + a small amount of phosphorus." },
+        { "id": "pb-2", "at": 75, "question": "A customer is machining bushes. Which product helps reduce waste?", "options": ["Sheet", "Hollow bar", "Treadplate", "Angle"], "answerIndex": 1, "explanation": "Hollow bar is already bored, so less material is machined away." },
+        { "id": "pb-3", "at": 112, "question": "Approximately how much does a 1\" phosphor bronze round bar weigh?", "options": ["4.92 kg/m", "1.31 kg/m", "19.03 kg/m", "2.95 kg/m"], "answerIndex": 0, "explanation": "1\" phosphor bronze round bar ≈ 4.92 kg/m." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ASC Metals — Recruiter Dashboard</title>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div id="auth" class="auth-shell hidden">
+  <div class="auth-visual">
+    <div class="logo-row"><div class="logo-mark">ASC</div><div class="brand">Metals Careers<span>Recruiter Dashboard</span></div></div>
+    <h1 class="auth-heading">Your shortlist, <em>pre-filtered.</em></h1>
+    <p class="auth-copy">Every candidate is scored on their resume and their video assessment. Review the shortlist, check the evidence, and invite the best to a final interview.</p>
+  </div>
+  <div class="auth-panel">
+    <form id="login" novalidate>
+      <div class="tag">Recruiters</div>
+      <div class="auth-title">Sign in</div>
+      <div class="sub">Admin access only.</div>
+      <div class="alert error hidden" data-err></div>
+      <div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="username"/></div>
+      <div class="field"><label for="a-pass">Password</label><input id="a-pass" name="password" type="password" autocomplete="current-password"/></div>
+      <button class="btn block" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="logo-row"><div class="logo-mark">ASC</div><div class="brand">Metals Careers<span>Recruiter Dashboard</span></div></div>
+    <nav class="nav">
+      <div class="nav-item active" data-view="candidates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="lbl">Candidates</span></div>
+      <div class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="lbl">Scoring rules</span></div>
+    </nav>
+    <div class="nav-foot"><div class="nav-item" id="logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="lbl">Sign out</span></div></div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-title" id="tb-title">Candidates</div>
+      <a class="btn sm ghost" href="/api/admin/export.csv">Export CSV</a>
+    </header>
+    <main class="content" id="view"></main>
+  </div>
+</div>
+
+<div id="drawer-bg" class="drawer-bg hidden"></div>
+<aside id="drawer" class="drawer hidden" aria-label="Candidate details"></aside>
+
+<script src="admin.js"></script>
+</body>
+</html>

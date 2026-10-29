@@ -1,0 +1,47 @@
+{
+  "role": "Trainee — Sales & Warehouse (Metals Stockholder)",
+  "weights": {
+    "resume": 40,
+    "assessment": 60
+  },
+  "thresholds": {
+    "shortlist": 70,
+    "review": 55,
+    "minResume": 40,
+    "minAssessment": 60
+  },
+  "showAnswerFeedback": true,
+  "resumeProfile": {
+    "weights": {
+      "skills": 45,
+      "experience": 25,
+      "education": 15,
+      "certifications": 10,
+      "completeness": 5
+    },
+    "idealYears": 3,
+    "skills": [
+      { "name": "Customer service", "weight": 3, "keywords": ["customer service", "customer care", "client service", "customer support", "customer facing", "customer-facing"] },
+      { "name": "Sales", "weight": 3, "keywords": ["sales", "selling", "account manager", "business development", "telesales", "quotation", "quoting"] },
+      { "name": "Metals knowledge", "weight": 3, "keywords": ["metal", "metals", "steel", "stainless", "aluminium", "aluminum", "copper", "brass", "bronze", "fabrication", "engineering"] },
+      { "name": "Warehouse operations", "weight": 2, "keywords": ["warehouse", "picking", "packing", "goods in", "dispatch", "logistics", "loading"] },
+      { "name": "Stock / inventory control", "weight": 2, "keywords": ["stock control", "inventory", "stock management", "stocktake", "stock take", "erp"] },
+      { "name": "Forklift", "weight": 2, "keywords": ["forklift", "fork lift", "flt", "counterbalance", "reach truck"] },
+      { "name": "MS Office / Excel", "weight": 1, "keywords": ["excel", "microsoft office", "ms office", "word", "spreadsheets", "outlook"] },
+      { "name": "CRM / order systems", "weight": 1, "keywords": ["crm", "salesforce", "sage", "order processing", "hubspot"] },
+      { "name": "Technical drawings", "weight": 1, "keywords": ["technical drawing", "technical drawings", "blueprint", "cad", "measurement", "micrometer", "vernier"] },
+      { "name": "Communication & teamwork", "weight": 1, "keywords": ["communication", "teamwork", "team player", "team work", "collaborat"] },
+      { "name": "Health & safety", "weight": 1, "keywords": ["health and safety", "health & safety", "h&s", "manual handling", "risk assessment", "coshh", "ppe"] }
+    ],
+    "education": [
+      { "level": "Degree or above", "points": 100, "keywords": ["bachelor", "bsc", "b.sc", "ba (hons)", "beng", "b.eng", "master", "msc", "mba", "degree", "phd"] },
+      { "level": "Diploma / HND / A-levels", "points": 80, "keywords": ["hnd", "hnc", "diploma", "a-level", "a level", "btec", "foundation degree"] },
+      { "level": "NVQ / Apprenticeship", "points": 65, "keywords": ["nvq", "apprenticeship", "apprentice", "city & guilds", "city and guilds"] },
+      { "level": "GCSE / Secondary", "points": 50, "keywords": ["gcse", "o level", "high school", "secondary school", "matric"] }
+    ],
+    "certifications": {
+      "pointsEach": 34,
+      "keywords": ["forklift licence", "forklift license", "rtitb", "cscs", "first aid", "iosh", "nebosh", "driving licence", "driving license", "manual handling certificate", "food hygiene"]
+    }
+  }
+}
