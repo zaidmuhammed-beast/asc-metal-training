@@ -1,6 +1,5 @@
 'use strict';
 const path = require('path');
-const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
 
@@ -17,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 4 * 1024 * 1024 }, // serverless request bodies are capped at ~6 MB after encoding
   fileFilter: (req, file, cb) => {
     const ok = Object.keys(resume.ALLOWED).includes(path.extname(file.originalname).toLowerCase());
     cb(ok ? null : new Error('Please upload a PDF, DOCX or TXT file.'), ok);
@@ -27,6 +26,15 @@ const upload = multer({
 const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ''));
 const clean = (s, max = 120) => String(s ?? '').trim().slice(0, max);
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+// Create the first admin account once per process, and load the latest
+// scoring rules before every API request.
+let ready;
+app.use('/api', wrap(async (req, res, next) => {
+  await (ready ||= ensureAdmin().catch(e => { ready = null; throw e; }));
+  await settings.refresh();
+  next();
+}));
 
 // ---------------------------------------------------------------- views
 function candidateSummary(c) {
@@ -85,7 +93,7 @@ function getModuleForCandidate(c, moduleId) {
 }
 
 // ---------------------------------------------------------------- auth
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', wrap(async (req, res) => {
   const b = req.body || {};
   const user = {
     role: 'candidate',
@@ -96,22 +104,22 @@ app.post('/api/auth/signup', (req, res) => {
   if (!user.firstName || !user.lastName) return res.status(400).json({ error: 'Please enter your full name.' });
   if (!isEmail(user.email)) return res.status(400).json({ error: 'Please enter a valid email address.' });
   if (String(b.password || '').length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
-  if (db.findUserByEmail(user.email)) return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
-  const created = db.insertUser({ ...user, passwordHash: auth.hashPassword(b.password), progress: {} });
-  auth.createSession(res, created);
-  notify.send(created.email, 'Your application has started', `Hi ${created.firstName}, thanks for registering. Next step: upload your resume.`);
+  if (await db.findUserByEmail(user.email)) return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
+  const created = await db.insertUser({ ...user, passwordHash: auth.hashPassword(b.password), progress: {} });
+  await auth.createSession(req, res, created);
+  await notify.send(created.email, 'Your application has started', `Hi ${created.firstName}, thanks for registering. Next step: upload your resume.`);
   res.json({ ok: true, role: created.role });
-});
+}));
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body || {};
-  const user = db.findUserByEmail(email);
+  const user = await db.findUserByEmail(email);
   if (!user || !auth.verifyPassword(password, user.passwordHash)) return res.status(401).json({ error: 'Incorrect email or password.' });
-  auth.createSession(res, user);
+  await auth.createSession(req, res, user);
   res.json({ ok: true, role: user.role });
-});
+}));
 
-app.post('/api/auth/logout', (req, res) => { auth.destroySession(req, res); res.json({ ok: true }); });
+app.post('/api/auth/logout', wrap(async (req, res) => { await auth.destroySession(req, res); res.json({ ok: true }); }));
 
 // ---------------------------------------------------------------- candidate
 const candidate = auth.requireRole('candidate');
@@ -131,14 +139,14 @@ app.post('/api/resume', candidate, upload.single('resume'), wrap(async (req, res
   const scored = resume.scoreResume(text, settings.get().resumeProfile);
   const ext = path.extname(req.file.originalname).toLowerCase();
   const storedName = `${c.id}${ext}`;
-  for (const old of fs.readdirSync(db.RESUME_DIR).filter(f => f.startsWith(c.id))) fs.unlinkSync(path.join(db.RESUME_DIR, old));
-  fs.writeFileSync(path.join(db.RESUME_DIR, storedName), req.file.buffer);
+  if (c.resume?.storedName && c.resume.storedName !== storedName) await db.deleteResume(c.resume.storedName);
+  await db.setResume(storedName, req.file.buffer);
 
   c.resume = {
     fileName: clean(req.file.originalname, 200), storedName, uploadedAt: new Date().toISOString(),
     uploads: (c.resume?.uploads || 0) + 1, text: text.slice(0, 50000), ...scored
   };
-  db.save();
+  await db.saveUser(c);
   res.json({ candidate: candidateSummary(c) });
 }));
 
@@ -146,18 +154,18 @@ app.get('/api/modules', candidate, (req, res) => res.json({ modules: publicModul
 
 // Watch progress. The server never lets the watched position pass the first
 // unanswered checkpoint, so questions cannot be skipped by seeking.
-app.post('/api/modules/:id/progress', candidate, (req, res) => {
+app.post('/api/modules/:id/progress', candidate, wrap(async (req, res) => {
   const r = getModuleForCandidate(req.user, req.params.id);
   if (r.error) return res.status(r.error[0]).json({ error: r.error[1] });
   const { m, p } = r;
   const next = m.checkpoints.find(cp => !p.answers[cp.id]);
   const cap = next ? next.at : m.durationSec;
   const pos = Math.min(Math.max(Number(req.body?.position) || 0, 0), cap);
-  if (pos > p.maxWatched) { p.maxWatched = pos; db.save(); }
+  if (pos > p.maxWatched) { p.maxWatched = pos; await db.saveUser(req.user); }
   res.json({ maxWatched: p.maxWatched });
-});
+}));
 
-app.post('/api/modules/:id/checkpoints/:cp', candidate, (req, res) => {
+app.post('/api/modules/:id/checkpoints/:cp', candidate, wrap(async (req, res) => {
   const r = getModuleForCandidate(req.user, req.params.id);
   if (r.error) return res.status(r.error[0]).json({ error: r.error[1] });
   const { m, p } = r;
@@ -170,12 +178,12 @@ app.post('/api/modules/:id/checkpoints/:cp', candidate, (req, res) => {
   const correct = choice === cp.answerIndex;
   p.answers[cp.id] = { choice, correct, at: new Date().toISOString() };
   p.maxWatched = Math.max(p.maxWatched, cp.at);
-  db.save();
+  await db.saveUser(req.user);
   const fb = settings.get().showAnswerFeedback;
   res.json(fb ? { correct, explanation: cp.explanation, correctIndex: cp.answerIndex } : { recorded: true });
-});
+}));
 
-app.post('/api/modules/:id/complete', candidate, (req, res) => {
+app.post('/api/modules/:id/complete', candidate, wrap(async (req, res) => {
   const c = req.user;
   const r = getModuleForCandidate(c, req.params.id);
   if (r.error) return res.status(r.error[0]).json({ error: r.error[1] });
@@ -188,30 +196,30 @@ app.post('/api/modules/:id/complete', candidate, (req, res) => {
   if (allDone) {
     c.result = evaluation.evaluate(c);
     const status = evaluation.effectiveStatus(c);
-    notify.send(c.email, 'Your assessment results',
+    await notify.send(c.email, 'Your assessment results',
       `Hi ${c.firstName}, your results are ready. Overall score: ${c.result.finalScore}/100. Outcome: ${evaluation.STATUS_LABELS[status]}.`);
   }
-  db.save();
+  await db.saveUser(c);
   res.json({ completed: true, allDone, candidate: candidateSummary(c) });
-});
+}));
 
 // ---------------------------------------------------------------- admin
 const admin = auth.requireRole('admin');
 
-app.get('/api/admin/candidates', admin, (req, res) => {
-  const list = db.candidates().map(candidateSummary).map(({ resume: r, assessment, ...c }) => ({
+app.get('/api/admin/candidates', admin, wrap(async (req, res) => {
+  const all = await db.candidates();
+  const list = all.map(u => ({ ...candidateSummary(u), overridden: !!u.override })).map(({ resume: r, assessment, ...c }) => ({
     ...c,
     resumeScore: r?.score ?? null, needsReview: !!r?.needsReview,
     assessmentScore: c.result ? c.result.assessmentScore : (assessment.answered ? assessment.score : null),
     answered: assessment.answered, totalQuestions: assessment.total,
-    finalScore: c.result?.finalScore ?? null, status: c.result?.status ?? null,
-    overridden: !!db.findUser(c.id).override
+    finalScore: c.result?.finalScore ?? null, status: c.result?.status ?? null
   }));
   res.json({ candidates: list, statusLabels: evaluation.STATUS_LABELS });
-});
+}));
 
-app.get('/api/admin/candidates/:id', admin, (req, res) => {
-  const c = db.findUser(req.params.id);
+app.get('/api/admin/candidates/:id', admin, wrap(async (req, res) => {
+  const c = await db.findUser(req.params.id);
   if (!c || c.role !== 'candidate') return res.status(404).json({ error: 'Candidate not found.' });
   const answers = settings.courses().map(m => ({
     id: m.id, title: m.title,
@@ -221,80 +229,84 @@ app.get('/api/admin/candidates/:id', admin, (req, res) => {
     })
   }));
   res.json({ candidate: candidateSummary(c), override: c.override || null, answers });
-});
+}));
 
-app.get('/api/admin/candidates/:id/resume', admin, (req, res) => {
-  const c = db.findUser(req.params.id);
-  if (!c?.resume) return res.status(404).json({ error: 'No resume uploaded.' });
-  res.download(path.join(db.RESUME_DIR, c.resume.storedName), c.resume.fileName);
-});
+app.get('/api/admin/candidates/:id/resume', admin, wrap(async (req, res) => {
+  const c = await db.findUser(req.params.id);
+  const file = c?.resume && await db.getResume(c.resume.storedName);
+  if (!file) return res.status(404).json({ error: 'No resume uploaded.' });
+  const ext = path.extname(c.resume.storedName);
+  res.type(resume.ALLOWED[ext] || 'application/octet-stream').attachment(c.resume.fileName).send(file);
+}));
 
-app.post('/api/admin/candidates/:id/status', admin, (req, res) => {
-  const c = db.findUser(req.params.id);
+app.post('/api/admin/candidates/:id/status', admin, wrap(async (req, res) => {
+  const c = await db.findUser(req.params.id);
   if (!c || c.role !== 'candidate') return res.status(404).json({ error: 'Candidate not found.' });
   const status = req.body?.status;
   if (status === null || status === '') delete c.override;
   else if (evaluation.STATUS_LABELS[status]) c.override = { status, note: clean(req.body?.note, 500), by: req.user.email, at: new Date().toISOString() };
   else return res.status(400).json({ error: 'Unknown status.' });
-  db.save();
+  await db.saveUser(c);
   if (c.override && req.body?.notify) {
-    notify.send(c.email, 'Update on your application', `Hi ${c.firstName}, your application status is now: ${evaluation.STATUS_LABELS[status]}.`);
+    await notify.send(c.email, 'Update on your application', `Hi ${c.firstName}, your application status is now: ${evaluation.STATUS_LABELS[status]}.`);
   }
   res.json({ candidate: candidateSummary(c), override: c.override || null });
-});
+}));
 
 app.get('/api/admin/settings', admin, (req, res) => res.json({ settings: settings.get() }));
 
-app.put('/api/admin/settings', admin, (req, res) => {
-  try { res.json({ settings: settings.update(req.body || {}) }); }
+app.put('/api/admin/settings', admin, wrap(async (req, res) => {
+  try { res.json({ settings: await settings.update(req.body || {}) }); }
   catch (e) { res.status(400).json({ error: e.message }); }
-});
+}));
 
 // Re-run scoring for everyone with the current settings (overrides are kept).
-app.post('/api/admin/reevaluate', admin, (req, res) => {
+app.post('/api/admin/reevaluate', admin, wrap(async (req, res) => {
   const profile = settings.get().resumeProfile;
-  let n = 0;
-  for (const c of db.candidates()) {
+  const all = await db.candidates();
+  await Promise.all(all.map(c => {
     if (c.resume?.text) Object.assign(c.resume, resume.scoreResume(c.resume.text, profile));
     if (c.result) c.result = evaluation.evaluate(c);
-    n++;
-  }
-  db.save();
-  res.json({ ok: true, updated: n });
-});
+    return db.saveUser(c);
+  }));
+  res.json({ ok: true, updated: all.length });
+}));
 
-app.get('/api/admin/export.csv', admin, (req, res) => {
+app.get('/api/admin/export.csv', admin, wrap(async (req, res) => {
   const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const rows = [['First name', 'Last name', 'Email', 'Phone', 'Location', 'Position', 'Registered', 'Stage', 'Resume score', 'Assessment score', 'Final score', 'Status']];
-  for (const c of db.candidates().map(candidateSummary)) {
+  for (const c of (await db.candidates()).map(candidateSummary)) {
     rows.push([c.firstName, c.lastName, c.email, c.phone, c.location, c.position, c.createdAt, c.stage,
       c.resume?.score, c.result?.assessmentScore, c.result?.finalScore, c.result?.statusLabel]);
   }
   res.type('text/csv').attachment('candidates.csv').send(rows.map(r => r.map(esc).join(',')).join('\n'));
-});
+}));
 
 // ---------------------------------------------------------------- errors
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError || err.message?.startsWith('Please upload')) {
-    return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 5 MB).' : err.message });
+    return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 4 MB).' : err.message });
   }
   console.error(err);
   res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
 
 // ---------------------------------------------------------------- boot
-function ensureAdmin() {
+async function ensureAdmin() {
   const email = process.env.ADMIN_EMAIL || 'admin@example.com';
   const password = process.env.ADMIN_PASSWORD || 'change-me-now';
-  if (db.state.users.some(u => u.role === 'admin')) return;
-  db.insertUser({ role: 'admin', email, firstName: 'Admin', lastName: '', passwordHash: auth.hashPassword(password) });
+  // Never create a guessable admin on a deployed site.
+  if (process.env.STORAGE === 'blobs' && !process.env.ADMIN_PASSWORD) {
+    console.warn('[setup] ADMIN_PASSWORD is not set, so no admin account was created.');
+    return;
+  }
+  if (await db.findUserByEmail(email) || await db.hasAdmin()) return;
+  await db.insertUser({ role: 'admin', email, firstName: 'Admin', lastName: '', passwordHash: auth.hashPassword(password) });
   if (!process.env.ADMIN_PASSWORD && process.env.NODE_ENV !== 'test') {
     console.warn(`[setup] Created admin ${email} with the default password "${password}". Set ADMIN_EMAIL / ADMIN_PASSWORD before going live.`);
   }
 }
-
-ensureAdmin();
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;

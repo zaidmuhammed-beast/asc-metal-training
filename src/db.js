@@ -1,49 +1,48 @@
 'use strict';
-// Minimal JSON-file store. Good for a pilot with a few hundred candidates;
-// swap for Postgres/SQLite behind the same functions when scaling up.
-const fs = require('fs');
-const path = require('path');
+// Data access. Each user is its own record so concurrent candidates never
+// overwrite each other's progress.
+//   users/<id>            user record (candidates and admins)
+//   emails/<sha256>       email → user id index
+//   sessions/<token>      login sessions
+//   resumes/<id><ext>     uploaded resume files
+//   settings              admin-edited scoring rules
 const crypto = require('crypto');
+const store = require('./store');
 
-const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, '..', 'data'));
-const DB_FILE = path.join(DATA_DIR, 'db.json');
-const RESUME_DIR = path.join(DATA_DIR, 'resumes');
-
-fs.mkdirSync(RESUME_DIR, { recursive: true });
-
-const EMPTY = { users: [], sessions: {}, settings: null };
-let state = load();
-
-function load() {
-  if (!fs.existsSync(DB_FILE)) return structuredClone(EMPTY);
-  return { ...structuredClone(EMPTY), ...JSON.parse(fs.readFileSync(DB_FILE, 'utf8')) };
-}
-
-function save() {
-  const tmp = DB_FILE + '.' + process.pid + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
-  fs.renameSync(tmp, DB_FILE);
-}
-
+const emailKey = email => 'emails/' + crypto.createHash('sha256').update(String(email || '').trim().toLowerCase()).digest('hex');
 const id = () => crypto.randomUUID();
 
-function findUserByEmail(email) {
-  const e = String(email || '').trim().toLowerCase();
-  return state.users.find(u => u.email === e) || null;
-}
-const findUser = userId => state.users.find(u => u.id === userId) || null;
-const candidates = () => state.users.filter(u => u.role === 'candidate');
+const findUser = userId => (/^[\w-]+$/.test(userId || '') ? store.get(`users/${userId}`) : null);
 
-function insertUser(user) {
+async function findUserByEmail(email) {
+  const ref = await store.get(emailKey(email));
+  return ref ? findUser(ref.id) : null;
+}
+
+async function insertUser(user) {
   const u = { id: id(), createdAt: new Date().toISOString(), ...user, email: user.email.trim().toLowerCase() };
-  state.users.push(u);
-  save();
+  await store.set(`users/${u.id}`, u);
+  await store.set(emailKey(u.email), { id: u.id });
   return u;
 }
 
+const saveUser = u => store.set(`users/${u.id}`, u);
+
+async function allUsers() {
+  const keys = await store.list('users');
+  return (await Promise.all(keys.map(k => store.get(k)))).filter(Boolean);
+}
+const candidates = async () => (await allUsers()).filter(u => u.role === 'candidate');
+const hasAdmin = async () => (await allUsers()).some(u => u.role === 'admin');
+
 module.exports = {
-  DATA_DIR, RESUME_DIR,
-  get state() { return state; },
-  save, id, findUserByEmail, findUser, candidates, insertUser,
-  _reset() { state = structuredClone(EMPTY); save(); }
+  findUser, findUserByEmail, insertUser, saveUser, candidates, hasAdmin,
+  getSession: token => (/^[a-f0-9]{64}$/.test(token || '') ? store.get(`sessions/${token}`) : null),
+  setSession: (token, s) => store.set(`sessions/${token}`, s),
+  deleteSession: token => store.delete(`sessions/${token}`),
+  getSettings: () => store.get('settings'),
+  setSettings: s => store.set('settings', s),
+  getResume: name => store.get(`resumes/${name}`, 'buffer'),
+  setResume: (name, buf) => store.set(`resumes/${name}`, buf),
+  deleteResume: name => store.delete(`resumes/${name}`)
 };

@@ -160,7 +160,7 @@ function renderResume() {
     <div class="grid2">
       <div class="card">
         <h3>${r ? 'Replace your resume' : 'Upload your resume'}</h3>
-        <p class="muted" style="margin-bottom:14px">PDF, DOCX or TXT · max 5 MB</p>
+        <p class="muted" style="margin-bottom:14px">PDF, DOCX or TXT · max 4 MB</p>
         <div class="alert error hidden" id="up-err"></div>
         ${locked ? '<div class="alert info">Your application has been assessed, so the resume can no longer be changed.</div>' : `
         <label class="drop" id="drop">

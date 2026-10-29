@@ -9,16 +9,19 @@
     "dev": "node --watch server.js",
     "test": "node --test test/*.test.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zaidmuhammed-beast/asc-metal-training.git"
   },
   "license": "UNLICENSED",
   "dependencies": {
+    "@netlify/blobs": "^11.1.7",
     "express": "^4.22.3",
     "mammoth": "^1.13.0",
     "multer": "^2.5.0",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^1.1.1"
   }
 }

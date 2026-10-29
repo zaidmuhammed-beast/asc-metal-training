@@ -1,13 +1,12 @@
 'use strict';
-// Outbound notifications. Messages are written to data/outbox.jsonl so they can
-// be inspected; plug an email provider (SMTP, SendGrid, SES…) into send().
-const fs = require('fs');
-const path = require('path');
-const { DATA_DIR } = require('./db');
+// Outbound notifications. Messages are saved under outbox/ in storage so they
+// can be inspected; plug an email provider (SMTP, SendGrid, SES…) into send().
+const crypto = require('crypto');
+const store = require('./store');
 
-function send(to, subject, body) {
+async function send(to, subject, body) {
   const msg = { to, subject, body, at: new Date().toISOString() };
-  fs.appendFileSync(path.join(DATA_DIR, 'outbox.jsonl'), JSON.stringify(msg) + '\n');
+  await store.set(`outbox/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.json`, msg);
   if (process.env.NODE_ENV !== 'test') console.log(`[notify] → ${to}: ${subject}`);
 }
 

@@ -19,14 +19,12 @@ function verifyPassword(password, stored) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function createSession(res, user) {
+const isHttps = req => req.secure || req.headers['x-forwarded-proto'] === 'https';
+
+async function createSession(req, res, user) {
   const token = crypto.randomBytes(32).toString('hex');
-  db.state.sessions[token] = { userId: user.id, expires: Date.now() + SESSION_TTL_MS };
-  db.save();
-  res.cookie(COOKIE, token, {
-    httpOnly: true, sameSite: 'lax', maxAge: SESSION_TTL_MS,
-    secure: process.env.NODE_ENV === 'production'
-  });
+  await db.setSession(token, { userId: user.id, expires: Date.now() + SESSION_TTL_MS });
+  res.cookie(COOKIE, token, { httpOnly: true, sameSite: 'lax', maxAge: SESSION_TTL_MS, secure: isHttps(req), path: '/' });
 }
 
 function readToken(req) {
@@ -35,26 +33,27 @@ function readToken(req) {
   return match ? decodeURIComponent(match.slice(COOKIE.length + 1)) : null;
 }
 
-function destroySession(req, res) {
+async function destroySession(req, res) {
   const token = readToken(req);
-  if (token && db.state.sessions[token]) { delete db.state.sessions[token]; db.save(); }
-  res.clearCookie(COOKIE);
+  if (token && /^[a-f0-9]{64}$/.test(token)) await db.deleteSession(token);
+  res.clearCookie(COOKIE, { path: '/' });
 }
 
-function currentUser(req) {
+async function currentUser(req) {
   const token = readToken(req);
-  const s = token && db.state.sessions[token];
+  const s = await db.getSession(token);
   if (!s) return null;
-  if (s.expires < Date.now()) { delete db.state.sessions[token]; db.save(); return null; }
+  if (s.expires < Date.now()) { await db.deleteSession(token); return null; }
   return db.findUser(s.userId);
 }
 
 const requireRole = role => (req, res, next) => {
-  const user = currentUser(req);
-  if (!user) return res.status(401).json({ error: 'Please sign in.' });
-  if (role && user.role !== role) return res.status(403).json({ error: 'Not allowed.' });
-  req.user = user;
-  next();
+  currentUser(req).then(user => {
+    if (!user) return res.status(401).json({ error: 'Please sign in.' });
+    if (role && user.role !== role) return res.status(403).json({ error: 'Not allowed.' });
+    req.user = user;
+    next();
+  }, next);
 };
 
 module.exports = { hashPassword, verifyPassword, createSession, destroySession, currentUser, requireRole };

@@ -1,0 +1,11 @@
+[build]
+  publish = "public"
+  command = "npm test"
+
+[functions]
+  directory = "netlify/functions"
+  # pdf-parse picks its pdf.js build at runtime, so the file tracer can't see it.
+  included_files = ["node_modules/pdf-parse/lib/pdf.js/v1.10.100/build/**"]
+
+[build.environment]
+  NODE_VERSION = "22"

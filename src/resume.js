@@ -13,9 +13,9 @@ const ALLOWED = {
 async function extractText(buffer, originalName) {
   const ext = path.extname(originalName || '').toLowerCase();
   if (ext === '.pdf') {
-    const { PDFParse } = require('pdf-parse');
-    const parser = new PDFParse({ data: buffer });
-    try { return (await parser.getText()).text || ''; } finally { await parser.destroy(); }
+    // Require the library file directly: pdf-parse's index.js runs a self-test.
+    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+    return (await pdfParse(buffer)).text || '';
   }
   if (ext === '.docx') {
     const mammoth = require('mammoth');
